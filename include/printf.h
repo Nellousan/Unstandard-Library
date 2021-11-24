@@ -9,6 +9,7 @@
 
 ///@file printf.h
 
+#include <iomanip>
 #include <iostream>
 
 /**
@@ -16,25 +17,86 @@
  * The Unstandard library
  */
 
-/**
- * @brief The format specifier of printf.
- */
+///\cond
 #define __USTD_PRINTF_KEY__ "{}"
+#define __USTD_PRINTF_OPEN_KEY__ '{'
+#define __USTD_PRINTF_CLOSE_KEY__ '}'
+#define __USTD_PRINTF_LEFT_JUSTIFY_SPECIFIER__ '-'
+#define __USTD_PRINTF_FLOATING_PRECISION_SPECIFIER__ '.'
+#define __USTD_PRINTF_HEXADECIMAL_SPECIFIER__ '#'
+#define __USTD_PRINTF_OCTAL_SPECIFIER__ '~'
+///\endcond
 
 namespace ustd {
 
 namespace {
+
+    void _print_format_parse_specifiers(std::ostream& os, std::string& string, size_t& f)
+    {
+        size_t i;
+        for (i = f; string[i] != __USTD_PRINTF_CLOSE_KEY__ && string[i] != '\0'; i++) {
+            char c = string[i];
+
+            if (c == __USTD_PRINTF_HEXADECIMAL_SPECIFIER__) {
+                os << std::hex;
+                continue;
+            }
+            if (c == __USTD_PRINTF_OCTAL_SPECIFIER__) {
+                os << std::oct;
+                continue;
+            }
+            if (c == __USTD_PRINTF_LEFT_JUSTIFY_SPECIFIER__) {
+                os << std::left;
+                continue;
+            }
+            if (c == __USTD_PRINTF_FLOATING_PRECISION_SPECIFIER__) {
+                std::string tmp = "";
+                size_t j = 0;
+                for (j = i + 1; std::isdigit(string[j]); j++) {
+                    tmp += string[j];
+                }
+                if (!tmp.empty()) {
+                    os << std::setprecision(std::stoi(tmp));
+                }
+                i = j - 1;
+                continue;
+            }
+            if (std::isdigit(c)) {
+                std::string tmp = "";
+                size_t j = 0;
+                for (j = i; std::isdigit(string[j]); j++) {
+                    tmp += string[j];
+                }
+                os << std::setw(std::stoi(tmp));
+                if (string[j] != __USTD_PRINTF_CLOSE_KEY__) {
+                    os << std::setfill(string[j]);
+                } else {
+                    os << std::setfill(' ');
+                    j--;
+                }
+                i = j;
+                continue;
+            }
+            f = std::string::npos;
+            return;
+        }
+        f = i + 1;
+    }
+
     template <typename T>
     void _print_format(std::ostream& os, std::string& string, T lastElem)
     {
         std::string copy = string;
-        size_t f = string.find(__USTD_PRINTF_KEY__);
-        size_t e = f + sizeof(__USTD_PRINTF_KEY__) - 1;
+        size_t f = string.find(__USTD_PRINTF_OPEN_KEY__);
         if (f != std::string::npos) {
             copy.erase(f);
             os << copy;
+        }
+        _print_format_parse_specifiers(os, string, ++f);
+        if (f != std::string::npos) {
             os << lastElem;
-            string.erase(0, e);
+            os << std::dec << std::right << std::setprecision(6) << std::setfill(' ');
+            string.erase(0, f);
         }
         os << string;
     }
@@ -43,13 +105,16 @@ namespace {
     void _print_format(std::ostream& os, std::string& string, T firstElem, Ts... args)
     {
         std::string copy = string;
-        size_t f = string.find(__USTD_PRINTF_KEY__);
-        size_t e = f + sizeof(__USTD_PRINTF_KEY__) - 1;
+        size_t f = string.find(__USTD_PRINTF_OPEN_KEY__);
         if (f != std::string::npos) {
             copy.erase(f);
             os << copy;
+        }
+        _print_format_parse_specifiers(os, string, ++f);
+        if (f != std::string::npos) {
             os << firstElem;
-            string.erase(0, e);
+            os << std::dec << std::right << std::setprecision(6) << std::setfill(' ');
+            string.erase(0, f);
             _print_format(os, string, args...);
         } else {
             os << string;
@@ -73,7 +138,7 @@ namespace {
 /**
  * @brief Prints every argument separated by a space.
  * This function adds an std::endl at the end.
- * This function relegate to std::ostream.
+ * This function relegates to std::ostream.
  * 
  * @param args Arguments to print.
  */
@@ -86,6 +151,8 @@ void print(Ts... args)
 /**
  * @brief Prints arguments formatted in a modern way.
  * The format specifier is "{}", no need to specify the type.
+ * This function relegates to std::ostream.
+ * 
  * @param fmt The format string.
  * @param args Arguments to print.
  */
