@@ -18,7 +18,6 @@
  */
 
 ///\cond
-#define __USTD_PRINTF_KEY__ "{}"
 #define __USTD_PRINTF_OPEN_KEY__ '{'
 #define __USTD_PRINTF_CLOSE_KEY__ '}'
 #define __USTD_PRINTF_LEFT_JUSTIFY_SPECIFIER__ '-'
@@ -31,7 +30,7 @@ namespace ustd {
 
 namespace {
 
-    void _print_format_parse_specifiers(std::ostream& os, std::string& string, size_t& f)
+    inline void _print_format_parse_specifiers(std::ostream& os, std::string& string, size_t& f)
     {
         size_t i;
         for (i = f; string[i] != __USTD_PRINTF_CLOSE_KEY__ && string[i] != '\0'; i++) {
